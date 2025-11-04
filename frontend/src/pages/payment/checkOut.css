@@ -1,0 +1,134 @@
+/* src/pages/Checkout.css */
+/* 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
+
+.checkout-container {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+  color: #111827;
+}
+
+.checkout-title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 32px;
+}
+
+.order-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.product-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.product-details {
+  flex-grow: 1;
+}
+
+.product-details h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.product-details p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 4px 0 0;
+}
+
+.product-price {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 24px 0;
+}
+
+.payment-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.payment-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.payment-option:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.payment-option.selected {
+  border-color: #000000;
+  background-color: #f9fafb;
+  box-shadow: 0 0 0 1px #000000;
+}
+
+/* Style สำหรับ icon ที่เป็น <img> */
+.payment-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 16px;
+  object-fit: contain;
+}
+
+.payment-name {
+  flex-grow: 1;
+}
+
+/* Style สำหรับส่วน footer และปุ่ม Next */
+.checkout-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.next-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #111827;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.next-button:hover {
+  background-color: #374151;
+}

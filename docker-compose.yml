@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database (เหมือนเดิม)
+  database:
+    image: postgres:15-alpine
+    container_name: dormly-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Import SQL อัตโนมัติ
+      - ./database/Dormly.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/sprint_dummy_data.sql:/docker-entrypoint-initdb.d/02-dummy-data.sql
+    ports:
+      - "${DB_PORT}:5432"
+    networks:
+      - dormly-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 2. Backend API (อัปเกรด)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dormly-backend
+    restart: unless-stopped
+    environment:
+      # (อ่านค่าทั้งหมดจาก .env)
+      NODE_ENV: ${NODE_ENV}
+      PORT: 3001
+      DB_HOST: database # 💡 คุยกับ service 'database'
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      OMISE_SECRET_KEY: ${OMISE_SECRET_KEY} # 💡 เพิ่ม Omise Key
+    volumes:
+      # 💡 1. เชื่อมโค้ดของคุณเข้าไป (แก้ใน VS Code, Docker เห็นทันที)
+      - ./backend:/app
+      # 💡 2. ป้องกันไม่ให้ node_modules ในเครื่อง ไปทับใน Docker
+      - /app/node_modules
+    ports:
+      - "${BACKEND_PORT}:3001"
+    networks:
+      - dormly-network
+    depends_on:
+      - database
+    # (เราลบ healthcheck ของ backend ออกก่อน เพราะ nodemon อาจจะรีสตาร์ทบ่อย)
+
+  # 3. Frontend Web Server (อัปเกรด)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dormly-frontend
+    restart: unless-stopped
+    environment:
+      # (Vite จะอ่านค่านี้)
+      BACKEND_URL: http://backend:3001
+      NODE_ENV: ${NODE_ENV}
+    volumes:
+      # 💡 1. เชื่อมโค้ดของคุณเข้าไป (แก้ใน VS Code, Docker เห็นทันที)
+      - ./frontend:/app
+      # 💡 2. ป้องกันไม่ให้ node_modules ในเครื่อง ไปทับใน Docker
+      - /app/node_modules
+    ports:
+      # 💡 แก้ Port ให้ตรงกับ Vite (5173)
+      - "${FRONTEND_PORT}:5173"
+    networks:
+      - dormly-network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  dormly-network:
+    driver: bridge

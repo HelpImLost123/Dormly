@@ -1,0 +1,193 @@
+/* src/component/paymentByCreditCard.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+.payment-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f7fafc;
+  font-family: 'Inter', sans-serif;
+}
+
+.payment-form-modal {
+  background-color: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  color: #6b7280;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  margin-right: 12px;
+  /* In a real scenario, you'd have an icon or image here */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.payment-method-selector {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.payment-method-selector .active {
+  color: #111827;
+  font-weight: 600;
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 16px;
+}
+
+.payment-method-selector a {
+  text-decoration: none;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon input {
+  padding-right: 50px;
+}
+
+.card-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 20px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.card-icon.visa {
+  background-image: url('https://cdn.omise.co/assets/brands/visa.png');
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.half-width {
+  flex: 1;
+}
+
+.pay-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 8px;
+}
+
+.pay-button:hover {
+  background-color: #2563eb;
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.secure-lock {
+  color: #22c55e;
+  margin-right: 6px;
+}
+
+.omise-logo {
+  font-weight: bold;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  padding: 0;
+  font-weight: 500;
+}
+
+.back-button:hover {
+  color: #111827;
+}
+
+.error-message {
+  color: #D9534F; /* สีแดง */
+  background-color: #FADBD8;
+  border: 1px solid #D9534F;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+}
