@@ -18,7 +18,6 @@ const QRPayment: React.FC<QRPaymentProps> = ({ navigateTo, dormData, setErrorMes
   const amountInSatang = priceInBaht * 100;
 
   useEffect(() => {
-    //Fetch QR Code จาก Backend เมื่อหน้านี้โหลด
     const createQRCode = async () => {
       if (amountInSatang <= 0) {
         setErrorMessage("Error: Invalid payment amount.");
@@ -28,7 +27,9 @@ const QRPayment: React.FC<QRPaymentProps> = ({ navigateTo, dormData, setErrorMes
 
       setIsLoading(true);
       try {
-        const response = await fetch('http://localhost:3001/api/create-qr-charge', {
+        // 💡💡💡 (แก้ไข URL) 💡💡💡
+        // (เพิ่ม /payment เข้าไป)
+        const response = await fetch('http://localhost:3001/api/payment/create-qr-charge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -37,13 +38,13 @@ const QRPayment: React.FC<QRPaymentProps> = ({ navigateTo, dormData, setErrorMes
             roomId: dormData.dorm_id
           }),
         });
+        // 💡💡💡 (จบจุดแก้ไข) 💡💡💡
 
         const data = await response.json();
         if (!response.ok || !data.success || !data.qrImageUrl) {
           throw new Error(data.message || 'Failed to create QR Code');
         }
 
-        //ได้รับ URL รูปภาพ QR Code แล้ว
         setQrImageUrl(data.qrImageUrl);
 
       } catch (error: any) {
@@ -57,10 +58,6 @@ const QRPayment: React.FC<QRPaymentProps> = ({ navigateTo, dormData, setErrorMes
 
     createQRCode();
     
-    // (หมายเหตุ: ในระบบจริง เราจะต้องเริ่ม Polling หรือ Web Sockets
-    // เพื่อเช็คว่า User จ่ายเงินสำเร็จหรือยัง
-    // แต่สำหรับตอนนี้ เราจะแค่แสดง QR Code)
-
   }, [amountInSatang, dormData.dorm_id, navigateTo, setErrorMessage]);
 
   return (
@@ -92,7 +89,6 @@ const QRPayment: React.FC<QRPaymentProps> = ({ navigateTo, dormData, setErrorMes
 
       <div className="qr-footer">
         <p>After paying, the status will be updated automatically.</p>
-        {/* (ในอนาคต: ปุ่มนี้จะเช็คสถานะ แต่ตอนนี้จะเด้งไปหน้า Success (จำลอง)) */}
         <button 
           className="check-status-button" 
           onClick={() => navigateTo('success')}

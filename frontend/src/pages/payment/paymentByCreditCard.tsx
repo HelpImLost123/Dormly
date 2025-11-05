@@ -1,7 +1,7 @@
 import React, { type FormEvent, useEffect, useState } from 'react';
 import './paymentByCreditCard.css';
 import { OMISE_PUBLIC_KEY } from '../../publicKey/omisePublicKey';
-import { type Page, type DormDataForPayment } from '../../App'; 
+import { type Page, type DormDataForPayment } from '../../App';
 
 declare global {
   interface Window {
@@ -9,17 +9,15 @@ declare global {
   }
 }
 
-
 interface PaymentByCreditCardProps {
   navigateTo: (page: Page) => void;
   dormData: DormDataForPayment;
-  setErrorMessage: (message: string) => void; 
+  setErrorMessage: (message: string) => void;
 }
 
 const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, dormData, setErrorMessage }) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  
   const priceInBaht = (dormData.room_types && dormData.room_types.length > 0)
     ? dormData.room_types[0].rent_per_month
     : 0;
@@ -40,35 +38,36 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
 
     if (amountInSatang <= 0) {
       setErrorMessage("Error: Invalid payment amount.");
-      navigateTo('fail'); 
+      navigateTo('fail');
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/create-charge', {
-        method: 'POST', 
+      // 💡💡💡 (แก้ไข URL) 💡💡💡
+      // (เพิ่ม /payment เข้าไป)
+      const response = await fetch('http://localhost:3001/api/payment/create-charge', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            token, 
-            amount: amountInSatang,
-            userId: 1, 
-            roomId: dormData.dorm_id
+        body: JSON.stringify({
+          token,
+          amount: amountInSatang,
+          userId: 1,
+          roomId: dormData.dorm_id
         }),
       });
 
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Payment failed');
-
 
       navigateTo('success');
 
     } catch (error: any) {
       console.error('Payment Error:', error);
-
-      setErrorMessage(error.message || 'An unknown error occurred.'); 
-      navigateTo('fail'); 
-      setIsLoading(false); 
+      setErrorMessage(error.message || 'An unknown error occurred.');
+      navigateTo('fail');
+      setIsLoading(false);
     }
   };
 
@@ -96,10 +95,9 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
       if (statusCode === 200) {
         handleCreateCharge(response.id);
       } else {
-
         console.error('Error creating token:', response.message);
         setErrorMessage(response.message || 'Failed to create token.');
-        navigateTo('fail'); 
+        navigateTo('fail');
       }
     });
   };
@@ -110,7 +108,7 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
         <button onClick={() => navigateTo('checkout')} className="back-button" disabled={isLoading}>
           ← Back to options
         </button>
-        
+
         <div className="header">
           <div className="brand-logo">Esino</div>
           <span>Secured by Omise</span>
@@ -122,8 +120,7 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-
-           <div className="form-group">
+          <div className="form-group">
             <label htmlFor="card-number">Card number</label>
             <div className="input-with-icon">
               <input type="text" id="card-number" placeholder="4242 4242 4242 4242" required />
@@ -148,6 +145,20 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
             <label htmlFor="country">Country or region</label>
             <select id="country" required>
               <option value="TH">Thailand</option>
+              <option value="US">United States</option>
+              <option value="JP">Japan</option>
+              <option value="CN">China</option>
+              <option value="SG">Singapore</option>
+              <option value="MY">Malaysia</option>
+              <option value="VN">Vietnam</option>
+              <option value="PH">Philippines</option>
+              <option value="KR">South Korea</option>
+              <option value="IN">India</option>
+              <option value="GB">United Kingdom</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="AU">Australia</option>
+              <option value="CA">Canada</option>
             </select>
           </div>
 
@@ -167,4 +178,3 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
 };
 
 export default PaymentByCreditCard;
-
