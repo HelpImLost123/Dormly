@@ -111,6 +111,64 @@ class Booking {
     }
   }
 
+  // Get bookings for dorms owned by a specific dorm owner
+  static async getBookingsByDormOwnerId(dormOwnerId) {
+    try {
+      if (!dormOwnerId || isNaN(dormOwnerId)) {
+        throw new Error('Invalid dorm owner ID');
+      }
+
+      const query = `
+        SELECT 
+          b.*,
+          u.f_name || ' ' || u.l_name as booker_name,
+          u.email as booker_email,
+          u.tel as booker_tel,
+          r.room_name,
+          rt.room_type_name,
+          rt.room_type_desc,
+          rt.rent_per_month,
+          rt.rent_per_day,
+          d.dorm_id,
+          d.dorm_name,
+          d.address,
+          d.tel as dorm_tel
+        FROM "DormBookings" b
+        JOIN "Users" u ON b.booker_id = u.user_id
+        JOIN "Rooms" r ON b.room_id = r.room_id
+        JOIN "RoomTypes" rt ON r.room_type_id = rt.room_type_id
+        JOIN "Dorms" d ON rt.dorm_id = d.dorm_id
+        WHERE d.owner_id = $1
+        ORDER BY b.created_at DESC
+      `;
+      const result = await pool.query(query, [dormOwnerId]);
+      return result.rows;
+    } catch (error) {
+      console.error('Error fetching bookings by dorm owner ID:', error);
+      throw error;
+    }
+  }
+
+  // Get dorm owner ID by user ID
+  static async getDormOwnerIdByUserId(userId) {
+    try {
+      if (!userId || isNaN(userId)) {
+        throw new Error('Invalid user ID');
+      }
+
+      const query = `
+        SELECT dorm_own_id 
+        FROM "DormOwners"
+        WHERE user_id = $1
+      `;
+      const result = await pool.query(query, [userId]);
+      return result.rows[0]?.dorm_own_id || null;
+    } catch (error) {
+      console.error('Error fetching dorm owner ID:', error);
+      throw error;
+    }
+  }
+
   // Check if room has conflicting bookings
   static async hasConflictingBooking(roomId, beginAt, endAt, excludeBookingId = null) {
     try {
@@ -261,6 +319,77 @@ class Booking {
       throw error;
     } finally {
       client.release();
+    }
+  }
+
+  // Update booking status
+  static async updateBookingStatus(bookingId, newStatus, userId) {
+    try {
+      if (!bookingId || isNaN(bookingId)) {
+        throw new Error('Invalid booking ID');
+      }
+
+      if (!userId || isNaN(userId)) {
+        throw new Error('Invalid user ID');
+      }
+
+      // Validate status
+      const validStatuses = ['รอการยืนยันจากเจ้าของหอพัก', 'รอการชำระเงินมัดจำ', 'ถูกยกเลิก', 'ปฏิเสธ', 'ชำระเงินมัดจำแล้ว', 'อยู่ระหว่างเช่า', 'หมดสัญญาเช่า'];
+      if (!validStatuses.includes(newStatus)) {
+        throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+      }
+
+      // Get booking details
+      const bookingQuery = `
+        SELECT 
+          b.booking_id,
+          b.booker_id,
+          b.room_id,
+          b.status,
+          d.owner_id,
+          do.user_id as owner_user_id
+        FROM "DormBookings" b
+        JOIN "Rooms" r ON b.room_id = r.room_id
+        JOIN "RoomTypes" rt ON r.room_type_id = rt.room_type_id
+        JOIN "Dorms" d ON rt.dorm_id = d.dorm_id
+        JOIN "DormOwners" do ON d.owner_id = do.dorm_own_id
+        WHERE b.booking_id = $1
+      `;
+      
+      const bookingResult = await pool.query(bookingQuery, [bookingId]);
+
+      if (bookingResult.rows.length === 0) {
+        throw new Error('Booking not found');
+      }
+
+      const booking = bookingResult.rows[0];
+
+      // Check authorization: either the booker or the dorm owner can update
+      const isBooker = booking.booker_id === userId;
+      const isOwner = booking.owner_user_id === userId;
+
+      if (!isBooker && !isOwner) {
+        throw new Error('Unauthorized: You can only update bookings for your own bookings or dorms you own');
+      }
+
+      // Bookers can only cancel their bookings
+      if (isBooker && !isOwner && newStatus !== 'ถูกยกเลิก') {
+        throw new Error('Bookers can only cancel their bookings');
+      }
+
+      // Update the booking status
+      const updateQuery = `
+        UPDATE "DormBookings" 
+        SET status = $1 
+        WHERE booking_id = $2 
+        RETURNING *
+      `;
+      
+      const result = await pool.query(updateQuery, [newStatus, bookingId]);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      throw error;
     }
   }
 }

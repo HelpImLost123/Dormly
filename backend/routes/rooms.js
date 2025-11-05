@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Room = require('../models/Room');
+const { requireAuth } = require('../middleware/auth');
 
 // GET /api/rooms/dorm/:dormId - Get all rooms for a specific dorm
 router.get('/dorm/:dormId', async (req, res) => {
@@ -90,6 +91,59 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Error fetching room',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/rooms/:id - Update room status and/or current occupancy (requires authentication and ownership)
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const roomId = parseInt(req.params.id);
+    const userId = req.session.user.user_id;
+    const { status, cur_occupancy } = req.body;
+    
+    if (isNaN(roomId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid room ID'
+      });
+    }
+
+    // Check if at least one field is provided
+    if (status === undefined && cur_occupancy === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one field (status or cur_occupancy) is required'
+      });
+    }
+
+    // Check if user owns the room
+    const isOwner = await Room.isRoomOwnedByUser(roomId, userId);
+    
+    if (!isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You can only update rooms in dorms you own'
+      });
+    }
+
+    const updateData = {};
+    if (status !== undefined) updateData.status = status;
+    if (cur_occupancy !== undefined) updateData.cur_occupancy = cur_occupancy;
+
+    const room = await Room.updateRoom(roomId, updateData);
+    
+    res.json({
+      success: true,
+      data: room,
+      message: 'Room updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating room:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Error updating room',
       error: error.message
     });
   }

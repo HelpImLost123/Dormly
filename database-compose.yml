@@ -1,9 +1,4 @@
 # PostgreSQL Database Container Only
-# Use this when you want to run just the database container
-# Command: docker-compose -f database-compose.yml up -d
-
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -23,8 +18,6 @@ services:
       # Initialize database with schema and dummy data
       - ./database/Dormly.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./database/sprint_dummy_data.sql:/docker-entrypoint-initdb.d/02-dummy-data.sql
-      # Custom PostgreSQL configuration (optional)
-      # - ./database/config/postgresql.conf:/etc/postgresql/postgresql.conf
     networks:
       - dormly_network
     healthcheck:
@@ -34,7 +27,6 @@ services:
       retries: 5
       start_period: 30s
 
-  # pgAdmin for database management (optional)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: dormly_pgadmin

@@ -101,4 +101,66 @@ router.get('/username/:username', async (req, res) => {
   }
 });
 
+// GET /api/users/dorm-owner/me - Get current user's dorm owner info (requires authentication)
+router.get('/dorm-owner/me', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    
+    const dormOwner = await User.getDormOwnerByUserId(userId);
+    
+    if (!dormOwner) {
+      return res.status(404).json({
+        success: false,
+        message: 'You are not registered as a dorm owner'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: dormOwner
+    });
+  } catch (error) {
+    console.error('Error fetching dorm owner info:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching dorm owner info',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/users/dorm-owner/bank-token - Update bank token for current dorm owner (requires authentication)
+router.put('/dorm-owner/bank-token', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const { bank_token } = req.body;
+    
+    if (!bank_token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bank token is required'
+      });
+    }
+    
+    const updatedOwner = await User.updateDormOwnerBankToken(userId, bank_token);
+    
+    res.json({
+      success: true,
+      data: updatedOwner,
+      message: 'Bank token updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating bank token:', error);
+    
+    // Return appropriate status code based on error
+    const statusCode = error.message.includes('not registered') ? 404 : 400;
+    
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error updating bank token',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

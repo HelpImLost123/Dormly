@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Dorm = require('../models/Dorm'); // 💡 Import โมเดล
+const Dorm = require('../models/Dorm'); 
 const { requireAuth } = require('../middleware/auth');
 
 // POST /api/dorms/search - Search dorms
@@ -30,7 +30,6 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid dorm ID' });
     }
     
-    // 💡 เรียกใช้ฟังก์ชันจาก Model
     const dorm = await Dorm.getDormById(dormId); 
     
     if (!dorm) {
@@ -56,5 +55,4 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// 💡💡💡 ต้อง export "router" 💡💡💡
 module.exports = router;

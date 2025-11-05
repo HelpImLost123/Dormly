@@ -27,9 +27,5 @@ USER node
 # Expose the port the app runs on
 EXPOSE 3001
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/auth/profile || exit 1
-
 # Command to run the application
 CMD ["npm", "start"]

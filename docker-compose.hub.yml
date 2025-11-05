@@ -1,11 +1,3 @@
-# Docker Compose for Dormly using Docker Hub Images
-# Replace 'yourusername' with your actual Docker Hub username
-# 
-# This version pulls pre-built images from Docker Hub instead of building locally
-# Perfect for deployment and sharing with others
-
-version: '3.8'
-
 services:
   # PostgreSQL Database
   database:

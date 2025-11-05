@@ -167,6 +167,61 @@ class User {
       throw error;
     }
   }
+
+  // Update bank token for dorm owner
+  static async updateDormOwnerBankToken(userId, bankToken) {
+    try {
+      if (!userId || isNaN(userId)) {
+        throw new Error('Invalid user ID');
+      }
+
+      if (!bankToken || typeof bankToken !== 'string') {
+        throw new Error('Valid bank token is required');
+      }
+
+      // Check if user is a dorm owner
+      const checkQuery = 'SELECT dorm_own_id FROM "DormOwners" WHERE user_id = $1';
+      const checkResult = await pool.query(checkQuery, [userId]);
+
+      if (checkResult.rows.length === 0) {
+        throw new Error('User is not registered as a dorm owner');
+      }
+
+      // Update the bank token
+      const updateQuery = `
+        UPDATE "DormOwners" 
+        SET bank_token = $1 
+        WHERE user_id = $2 
+        RETURNING dorm_own_id, user_id, bank_token, registered_at
+      `;
+      const result = await pool.query(updateQuery, [bankToken.trim(), userId]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating bank token:', error);
+      throw error;
+    }
+  }
+
+  // Get dorm owner info by user ID
+  static async getDormOwnerByUserId(userId) {
+    try {
+      if (!userId || isNaN(userId)) {
+        throw new Error('Invalid user ID');
+      }
+
+      const query = `
+        SELECT dorm_own_id, user_id, bank_token, registered_at 
+        FROM "DormOwners" 
+        WHERE user_id = $1
+      `;
+      const result = await pool.query(query, [userId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error fetching dorm owner info:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = User;

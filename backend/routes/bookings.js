@@ -67,6 +67,40 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/bookings/owner/my - Get bookings for dorms owned by current user (requires authentication)
+router.get('/owner/my', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    
+    // Get the dorm owner ID for the current user
+    const dormOwnerId = await Booking.getDormOwnerIdByUserId(userId);
+    
+    // If user is not a dorm owner, return empty list
+    if (!dormOwnerId) {
+      return res.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
+    
+    const bookings = await Booking.getBookingsByDormOwnerId(dormOwnerId);
+    
+    res.json({
+      success: true,
+      data: bookings,
+      count: bookings.length
+    });
+  } catch (error) {
+    console.error('Error fetching owner bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error fetching owner bookings',
+      error: error.message
+    });
+  }
+});
+
 // POST /api/bookings - Create a new booking (requires authentication)
 router.post('/', requireAuth, async (req, res) => {
   try {
@@ -86,6 +120,44 @@ router.post('/', requireAuth, async (req, res) => {
     res.status(400).json({
       success: false,
       message: error.message || 'Error creating booking',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/bookings/:id/status - Update booking status (requires authentication)
+router.put('/:id/status', requireAuth, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const userId = req.session.user.user_id;
+    const { status } = req.body;
+    
+    if (isNaN(bookingId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID'
+      });
+    }
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status is required'
+      });
+    }
+    
+    const booking = await Booking.updateBookingStatus(bookingId, status, userId);
+    
+    res.json({
+      success: true,
+      data: booking,
+      message: 'Booking status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Error updating booking status',
       error: error.message
     });
   }

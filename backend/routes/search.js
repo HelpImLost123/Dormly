@@ -61,7 +61,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Removed - search suggestions not needed for this sprint
-// Removed - dorm details available via /api/dorms/:id
-
 module.exports = router;

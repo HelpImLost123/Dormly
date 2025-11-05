@@ -125,6 +125,93 @@ class Room {
       throw error;
     }
   }
+
+  // Update room status and/or current occupancy
+  static async updateRoom(roomId, updateData) {
+    try {
+      if (!roomId || isNaN(roomId)) {
+        throw new Error('Invalid room ID');
+      }
+
+      const { status, cur_occupancy } = updateData;
+
+      // Validate status if provided
+      if (status && !['ห้องว่าง', 'ห้องไม่ว่าง'].includes(status)) {
+        throw new Error('Invalid status. Must be: ห้องว่าง, ห้องไม่ว่าง');
+      }
+
+      // Validate cur_occupancy if provided
+      if (cur_occupancy !== undefined && (isNaN(cur_occupancy) || cur_occupancy < 0)) {
+        throw new Error('Current occupancy must be a non-negative number');
+      }
+
+      // Check if room exists
+      const checkQuery = 'SELECT room_id FROM "Rooms" WHERE room_id = $1';
+      const checkResult = await pool.query(checkQuery, [roomId]);
+      
+      if (checkResult.rows.length === 0) {
+        throw new Error('Room not found');
+      }
+
+      // Build dynamic update query
+      const updates = [];
+      const values = [];
+      let paramIndex = 1;
+
+      if (status) {
+        updates.push(`status = $${paramIndex++}`);
+        values.push(status);
+      }
+
+      if (cur_occupancy !== undefined) {
+        updates.push(`cur_occupancy = $${paramIndex++}`);
+        values.push(cur_occupancy);
+      }
+
+      if (updates.length === 0) {
+        throw new Error('No update data provided');
+      }
+
+      values.push(roomId);
+
+      const query = `
+        UPDATE "Rooms" 
+        SET ${updates.join(', ')}
+        WHERE room_id = $${paramIndex}
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, values);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating room:', error);
+      throw error;
+    }
+  }
+
+  // Check if user owns the dorm that contains this room
+  static async isRoomOwnedByUser(roomId, userId) {
+    try {
+      if (!roomId || isNaN(roomId) || !userId || isNaN(userId)) {
+        throw new Error('Invalid room ID or user ID');
+      }
+
+      const query = `
+        SELECT d.owner_id, do.user_id
+        FROM "Rooms" r
+        JOIN "RoomTypes" rt ON r.room_type_id = rt.room_type_id
+        JOIN "Dorms" d ON rt.dorm_id = d.dorm_id
+        JOIN "DormOwners" do ON d.owner_id = do.dorm_own_id
+        WHERE r.room_id = $1 AND do.user_id = $2
+      `;
+      
+      const result = await pool.query(query, [roomId, userId]);
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Error checking room ownership:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = Room;
