@@ -212,6 +212,245 @@ class Room {
       throw error;
     }
   }
+
+  // Check if user owns the dorm
+  static async isDormOwnedByUser(dormId, userId) {
+    try {
+      if (!dormId || isNaN(dormId) || !userId || isNaN(userId)) {
+        throw new Error('Invalid dorm ID or user ID');
+      }
+
+      const query = `
+        SELECT d.dorm_id
+        FROM "Dorms" d
+        JOIN "DormOwners" do ON d.owner_id = do.dorm_own_id
+        WHERE d.dorm_id = $1 AND do.user_id = $2
+      `;
+      
+      const result = await pool.query(query, [dormId, userId]);
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Error checking dorm ownership:', error);
+      throw error;
+    }
+  }
+
+  // Create a new room type
+  static async createRoomType(roomTypeData, userId) {
+    try {
+      const { dorm_id, room_type_name, room_type_desc, rent_per_month, rent_per_day } = roomTypeData;
+
+      // Validate required fields
+      if (!dorm_id || isNaN(dorm_id)) {
+        throw new Error('Valid dorm ID is required');
+      }
+
+      if (!room_type_name || room_type_name.trim().length === 0) {
+        throw new Error('Room type name is required');
+      }
+
+      // Check if user owns the dorm
+      const isOwner = await this.isDormOwnedByUser(dorm_id, userId);
+      if (!isOwner) {
+        throw new Error('Unauthorized: You can only create room types for dorms you own');
+      }
+
+      // Validate pricing
+      if (rent_per_month !== undefined && (isNaN(rent_per_month) || rent_per_month < 0)) {
+        throw new Error('Rent per month must be a non-negative number');
+      }
+
+      if (rent_per_day !== undefined && (isNaN(rent_per_day) || rent_per_day < 0)) {
+        throw new Error('Rent per day must be a non-negative number');
+      }
+
+      const query = `
+        INSERT INTO "RoomTypes" (dorm_id, room_type_name, room_type_desc, rent_per_month, rent_per_day)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, [
+        dorm_id,
+        room_type_name.trim(),
+        room_type_desc?.trim() || null,
+        rent_per_month || null,
+        rent_per_day || null
+      ]);
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating room type:', error);
+      throw error;
+    }
+  }
+
+  // Create multiple rooms for a room type
+  static async createRooms(roomsData, userId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { room_type_id, room_count, room_name_prefix, starting_number, status, cur_occupancy } = roomsData;
+
+      // Validate required fields
+      if (!room_type_id || isNaN(room_type_id)) {
+        throw new Error('Valid room type ID is required');
+      }
+
+      if (!room_count || isNaN(room_count) || room_count <= 0) {
+        throw new Error('Room count must be a positive number');
+      }
+
+      // Check if room type exists and user owns it
+      const roomTypeCheck = await client.query(
+        `SELECT rt.room_type_id, d.dorm_id
+         FROM "RoomTypes" rt
+         JOIN "Dorms" d ON rt.dorm_id = d.dorm_id
+         JOIN "DormOwners" do ON d.owner_id = do.dorm_own_id
+         WHERE rt.room_type_id = $1 AND do.user_id = $2`,
+        [room_type_id, userId]
+      );
+
+      if (roomTypeCheck.rows.length === 0) {
+        throw new Error('Room type not found or you do not own this dorm');
+      }
+
+      // Set defaults
+      const prefix = room_name_prefix || 'ห้อง';
+      const startNum = starting_number || 1;
+      const roomStatus = status || 'ห้องว่าง';
+      const occupancy = cur_occupancy || 0;
+
+      // Validate status
+      if (!['ห้องว่าง', 'ห้องไม่ว่าง'].includes(roomStatus)) {
+        throw new Error('Invalid status. Must be: ห้องว่าง or ห้องไม่ว่าง');
+      }
+
+      const createdRooms = [];
+
+      // Create rooms
+      for (let i = 0; i < room_count; i++) {
+        const roomNumber = startNum + i;
+        const roomName = `${prefix}${roomNumber}`;
+
+        const query = `
+          INSERT INTO "Rooms" (room_name, room_type_id, cur_occupancy, status)
+          VALUES ($1, $2, $3, $4)
+          RETURNING *
+        `;
+
+        const result = await client.query(query, [
+          roomName,
+          room_type_id,
+          occupancy,
+          roomStatus
+        ]);
+
+        createdRooms.push(result.rows[0]);
+      }
+
+      await client.query('COMMIT');
+      return createdRooms;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error creating rooms:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Create room type with rooms (combined operation)
+  static async createRoomTypeWithRooms(data, userId) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { 
+        dorm_id, 
+        room_type_name, 
+        room_type_desc, 
+        rent_per_month, 
+        rent_per_day,
+        room_count,
+        room_name_prefix,
+        starting_number,
+        status,
+        cur_occupancy
+      } = data;
+
+      // Validate dorm ownership
+      const isOwner = await this.isDormOwnedByUser(dorm_id, userId);
+      if (!isOwner) {
+        throw new Error('Unauthorized: You can only create room types for dorms you own');
+      }
+
+      // Create room type
+      const roomTypeQuery = `
+        INSERT INTO "RoomTypes" (dorm_id, room_type_name, room_type_desc, rent_per_month, rent_per_day)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `;
+
+      const roomTypeResult = await client.query(roomTypeQuery, [
+        dorm_id,
+        room_type_name.trim(),
+        room_type_desc?.trim() || null,
+        rent_per_month || null,
+        rent_per_day || null
+      ]);
+
+      const roomType = roomTypeResult.rows[0];
+
+      // Create rooms if room_count is provided
+      let rooms = [];
+      if (room_count && room_count > 0) {
+        if (room_count > 100) {
+          throw new Error('Cannot create more than 100 rooms at once');
+        }
+
+        const prefix = room_name_prefix || 'ห้อง';
+        const startNum = starting_number || 1;
+        const roomStatus = status || 'ห้องว่าง';
+        const occupancy = cur_occupancy || 0;
+
+        for (let i = 0; i < room_count; i++) {
+          const roomNumber = startNum + i;
+          const roomName = `${prefix}${roomNumber}`;
+
+          const roomQuery = `
+            INSERT INTO "Rooms" (room_name, room_type_id, cur_occupancy, status)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+          `;
+
+          const roomResult = await client.query(roomQuery, [
+            roomName,
+            roomType.room_type_id,
+            occupancy,
+            roomStatus
+          ]);
+
+          rooms.push(roomResult.rows[0]);
+        }
+      }
+
+      await client.query('COMMIT');
+
+      return {
+        roomType,
+        rooms,
+        roomCount: rooms.length
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error creating room type with rooms:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = Room;
