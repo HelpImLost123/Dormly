@@ -291,7 +291,7 @@ class Room {
     try {
       await client.query('BEGIN');
 
-      const { room_type_id, room_count, room_name_prefix, starting_number, status, cur_occupancy } = roomsData;
+      const { room_type_id, room_type_name, room_count, starting_number, status, cur_occupancy } = roomsData;
 
       // Validate required fields
       if (!room_type_id || isNaN(room_type_id)) {
@@ -302,9 +302,13 @@ class Room {
         throw new Error('Room count must be a positive number');
       }
 
+      if (room_count > 1000) {
+        throw new Error('Cannot create more than 1000 rooms at once');
+      }
+
       // Check if room type exists and user owns it
       const roomTypeCheck = await client.query(
-        `SELECT rt.room_type_id, d.dorm_id
+        `SELECT rt.room_type_id, rt.room_type_name, d.dorm_id
          FROM "RoomTypes" rt
          JOIN "Dorms" d ON rt.dorm_id = d.dorm_id
          JOIN "DormOwners" do ON d.owner_id = do.dorm_own_id
@@ -316,8 +320,10 @@ class Room {
         throw new Error('Room type not found or you do not own this dorm');
       }
 
+      // Get room type name from database
+      const roomTypeName = roomTypeCheck.rows[0].room_type_name;
+
       // Set defaults
-      const prefix = room_name_prefix || 'ห้อง';
       const startNum = starting_number || 1;
       const roomStatus = status || 'ห้องว่าง';
       const occupancy = cur_occupancy || 0;
@@ -332,7 +338,7 @@ class Room {
       // Create rooms
       for (let i = 0; i < room_count; i++) {
         const roomNumber = startNum + i;
-        const roomName = `${prefix}${roomNumber}`;
+        const roomName = `${roomTypeName}${roomNumber}`;
 
         const query = `
           INSERT INTO "Rooms" (room_name, room_type_id, cur_occupancy, status)
@@ -374,7 +380,6 @@ class Room {
         rent_per_month, 
         rent_per_day,
         room_count,
-        room_name_prefix,
         starting_number,
         status,
         cur_occupancy
@@ -405,19 +410,21 @@ class Room {
 
       // Create rooms if room_count is provided
       let rooms = [];
+      if (!room_count || isNaN(room_count) || room_count <= 0) {
+        throw new Error('Invalid room count');
+      }
       if (room_count && room_count > 0) {
-        if (room_count > 100) {
-          throw new Error('Cannot create more than 100 rooms at once');
+        if (room_count > 1000) {
+          throw new Error('Cannot create more than 1000 rooms at once');
         }
 
-        const prefix = room_name_prefix || 'ห้อง';
         const startNum = starting_number || 1;
         const roomStatus = status || 'ห้องว่าง';
         const occupancy = cur_occupancy || 0;
 
         for (let i = 0; i < room_count; i++) {
           const roomNumber = startNum + i;
-          const roomName = `${prefix}${roomNumber}`;
+          const roomName = `${room_type_name}${roomNumber}`;
 
           const roomQuery = `
             INSERT INTO "Rooms" (room_name, room_type_id, cur_occupancy, status)
