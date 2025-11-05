@@ -3,15 +3,15 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
-require('dotenv').config(); // .env ที่ root
+require('dotenv').config();
 
-// Import configurations
+const omise = require('omise');
 const sessionConfig = require('./config/session');
 
 // Import services
 const paymentService = require('./services/paymentService');
 
-// Import routes
+// Routes
 const roomRoutes = require('./routes/rooms');
 const bookingRoutes = require('./routes/bookings');
 const mediaRoutes = require('./routes/media');
@@ -28,24 +28,20 @@ const pool = require('./config/database');
 paymentService.initializeOmise();
 
 const app = express();
-const PORT = process.env.PORT || 3001; // (รันที่ 3001 ตามไฟล์ docker)
+const PORT = process.env.PORT || 3001;
 
-// CORS configuration (โค้ดเดิมของคุณ)
+// CORS (โค้ดเดิมของคุณ)
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
-      'http://localhost:3000',   // Frontend (Production)
-      'http://localhost:5173',   // Frontend (Development)
+      'http://localhost:3000',   // Prod
+      'http://localhost:5173',   // Dev
       process.env.FRONTEND_URL,
       null
     ];
-    
-    // ใน Dev Mode, เราอนุญาตทั้งหมด
     if (process.env.NODE_ENV === 'development') {
       callback(null, true);
-    }
-    // ใน Prod Mode, เราเช็ค
-    else if (!origin || allowedOrigins.includes(origin)) {
+    } else if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -60,7 +56,9 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session(sessionConfig));
+app.use(session(sessionConfig));
 
+// API Routes
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
@@ -82,7 +80,6 @@ app.get('/api/health', async (req, res) => {
       success: true,
       message: 'Backend API is healthy',
       timestamp: result.rows[0].now,
-      // ...
     });
   } catch (error) {
     res.status(500).json({
@@ -94,10 +91,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.get('/api', (req, res) => {
-  res.json({
-    name: 'Dormly Backend API',
-    // ...
-  });
+  res.json({ name: 'Dormly Backend API' });
 });
 
 // Global error handler
@@ -109,7 +103,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler (ต้องอยู่ล่างสุด)
 app.use((req, res) => {
   res.status(404).json({
     success: false,

@@ -1,7 +1,6 @@
 import React, { type FormEvent, useEffect, useState } from 'react';
 import './paymentByCreditCard.css';
 import { OMISE_PUBLIC_KEY } from '../../publicKey/omisePublicKey';
-
 import { type Page, type DormDataForPayment } from '../../App'; 
 
 declare global {
@@ -10,30 +9,27 @@ declare global {
   }
 }
 
+
 interface PaymentByCreditCardProps {
   navigateTo: (page: Page) => void;
-  dormData: DormDataForPayment; 
+  dormData: DormDataForPayment;
+  setErrorMessage: (message: string) => void; 
 }
 
-const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, dormData }) => {
+const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, dormData, setErrorMessage }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
- 
+  
   const priceInBaht = (dormData.room_types && dormData.room_types.length > 0)
     ? dormData.room_types[0].rent_per_month
     : 0;
-
-
   const amountInSatang = priceInBaht * 100;
 
-  // โหลด Omise script
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://cdn.omise.co/omise.js';
     script.async = true;
     document.body.appendChild(script);
-
     return () => {
       document.body.removeChild(script);
     };
@@ -41,41 +37,41 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
 
   const handleCreateCharge = async (token: string) => {
     setIsLoading(true);
-    setErrorMessage(null);
 
-    // (ตรวจสอบอีกครั้งว่ามีราคาก่อนยิง API)
     if (amountInSatang <= 0) {
       setErrorMessage("Error: Invalid payment amount.");
+      navigateTo('fail'); 
       setIsLoading(false);
       return;
     }
 
     try {
-      // (ตรวจสอบ URL ให้ถูกต้องว่า Backend รันที่ 3001)
       const response = await fetch('http://localhost:3001/api/create-charge', {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             token, 
-            amount: amountInSatang, 
+            amount: amountInSatang,
             userId: 1, 
-            roomId: dormData.dorm_id 
+            roomId: dormData.dorm_id
         }),
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Payment failed');
 
-      navigateTo('thankYou');
+
+      navigateTo('success');
 
     } catch (error: any) {
       console.error('Payment Error:', error);
-      setErrorMessage(error.message || 'An unknown error occurred.');
+
+      setErrorMessage(error.message || 'An unknown error occurred.'); 
+      navigateTo('fail'); 
       setIsLoading(false); 
     }
   };
 
-  // เมื่อผู้ใช้กด submit
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isLoading) return;
@@ -100,8 +96,10 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
       if (statusCode === 200) {
         handleCreateCharge(response.id);
       } else {
+
         console.error('Error creating token:', response.message);
         setErrorMessage(response.message || 'Failed to create token.');
+        navigateTo('fail'); 
       }
     });
   };
@@ -109,11 +107,10 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
   return (
     <div className="payment-container">
       <div className="payment-form-modal">
-
         <button onClick={() => navigateTo('checkout')} className="back-button" disabled={isLoading}>
           ← Back to options
         </button>
-
+        
         <div className="header">
           <div className="brand-logo">Esino</div>
           <span>Secured by Omise</span>
@@ -124,21 +121,19 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
           <a href="#">Other Methods →</a>
         </div>
 
-        {/* ฟอร์มกรอกข้อมูลบัตร */}
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="form-group">
+
+           <div className="form-group">
             <label htmlFor="card-number">Card number</label>
             <div className="input-with-icon">
               <input type="text" id="card-number" placeholder="4242 4242 4242 4242" required />
               <div className="card-icon visa"></div>
             </div>
           </div>
-
           <div className="form-group">
             <label htmlFor="card-name">Name on card</label>
             <input type="text" id="card-name" placeholder="Jane Doe" required />
           </div>
-
           <div className="form-row">
             <div className="form-group half-width">
               <label htmlFor="card-expiry">Expiry date</label>
@@ -149,7 +144,6 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
               <input type="text" id="card-cvc" placeholder="•••" required />
             </div>
           </div>
-
           <div className="form-group">
             <label htmlFor="country">Country or region</label>
             <select id="country" required>
@@ -157,10 +151,6 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
             </select>
           </div>
 
-          {/* แสดง Error message ถ้ามี */}
-          {errorMessage && <div className="error-message">{errorMessage}</div>}
-
-          {/* 💡 6. ปุ่มจ่ายเงิน (ใช้ราคาจริง) */}
           <button type="submit" className="pay-button" disabled={isLoading}>
             {isLoading ? 'Processing...' : `Pay ${priceInBaht.toLocaleString()} THB`}
           </button>
@@ -177,3 +167,4 @@ const PaymentByCreditCard: React.FC<PaymentByCreditCardProps> = ({ navigateTo, d
 };
 
 export default PaymentByCreditCard;
+

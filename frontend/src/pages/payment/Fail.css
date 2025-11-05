@@ -1,15 +1,12 @@
-/* src/pages/ThankYou.css */
 
-.thank-you-container {
+.payment-result-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #f7fafc;
+  margin-top: 60px;
   font-family: 'Inter', sans-serif;
   padding: 24px;
 }
-
 .card {
   background: white;
   border-radius: 16px;
@@ -18,76 +15,49 @@
   width: 100%;
   max-width: 400px;
   text-align: center;
+  border: 1px solid #e5e7eb;
 }
-
 .icon-container {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: center; 
 }
-
-.check-icon {
+.fail-icon {
   width: 80px;
   height: 80px;
 }
-.check-circle {
+.fail-circle {
   stroke-width: 2;
-  stroke: #111827;
+  stroke: #EF4444; /* Red */
   fill: none;
 }
-.check-mark {
+.fail-mark {
   stroke-width: 3;
-  stroke: #111827;
+  stroke: #EF4444; /* Red */
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
-.title {
+.title-fail {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: #EF4444; /* Red */
   margin: 0 0 12px;
 }
-
 .subtitle {
   font-size: 16px;
   color: #4b5563;
   margin: 0;
+  word-wrap: break-word;
 }
-
 .divider {
   border: none;
   border-top: 1px solid #e5e7eb;
   margin: 32px 0;
 }
-
-.order-details {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-bottom: 32px;
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  text-align: left;
-}
-
-.label {
-  font-size: 14px;
-  color: #6b7280;
-  letter-spacing: 0.5px;
-}
-
-.value {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.continue-button {
+.fail-button {
   width: 100%;
   padding: 14px;
-  background-color: #111827;
+  background-color: #EF4444; /* Red */
   color: white;
   border: none;
   border-radius: 12px;
@@ -96,7 +66,6 @@
   cursor: pointer;
   transition: background-color 0.2s;
 }
-
-.continue-button:hover {
-  background-color: #374151;
+.fail-button:hover {
+  background-color: #DC2626; /* Darker Red */
 }
