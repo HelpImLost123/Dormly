@@ -1,10 +1,7 @@
-
-
 import React from 'react';
-import './ThankYou.css';
+import './Success.css'; 
 import { type DormDataForPayment } from '../../App';
 
-// SVG
 const CheckIcon = () => (
   <svg className="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
     <circle className="check-circle" cx="26" cy="26" r="25" fill="none"/>
@@ -12,19 +9,19 @@ const CheckIcon = () => (
   </svg>
 );
 
-interface ThankYouProps {
+interface SuccessProps {
   onContinue: () => void;
-  dormData: DormDataForPayment; 
+  dormData: DormDataForPayment;
 }
 
-const ThankYou: React.FC<ThankYouProps> = ({ onContinue, dormData }) => {
+const Success: React.FC<SuccessProps> = ({ onContinue, dormData }) => {
 
   const priceInBaht = (dormData.room_types && dormData.room_types.length > 0)
     ? dormData.room_types[0].rent_per_month
     : 0;
 
   return (
-    <div className="thank-you-container">
+    <div className="payment-result-container">
       <div className="card">
         <div className="icon-container">
           <CheckIcon />
@@ -46,11 +43,11 @@ const ThankYou: React.FC<ThankYouProps> = ({ onContinue, dormData }) => {
         </div>
 
         <button className="continue-button" onClick={onContinue}>
-          Continue shopping
+          Continue
         </button>
       </div>
     </div>
   );
 };
 
-export default ThankYou;
+export default Success;

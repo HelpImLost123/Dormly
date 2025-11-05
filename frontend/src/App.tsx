@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/use-auth';
 import MainLayout from './components/layouts/MainLayout';
@@ -22,10 +22,13 @@ import SettingsPage from './pages/SettingsPage';
 import Checkout from './pages/payment/checkOut';
 import PaymentByCreditCard from './pages/payment/paymentByCreditCard';
 import MobileBanking from './pages/payment/MobileBanking';
-import ThankYou from './pages/payment/ThankYou';
+import QRPayment from './pages/payment/QRPayment'; 
+import Success from './pages/payment/Success';
+import Fail from './pages/payment/Fail';
+
 import './App.css';
 
-export type Page = 'checkout' | 'paymentCard' | 'mobileBanking' | 'thankYou';
+export type Page = 'checkout' | 'paymentCard' | 'mobileBanking' | 'qrPayment' | 'success' | 'fail';
 
 export interface DormDataForPayment {
   dorm_id: number;
@@ -35,26 +38,21 @@ export interface DormDataForPayment {
 }
 
 function PaymentFlow() {
-  const [currentPage, setCurrentPage] = useState<Page>('checkout');
-
   const location = useLocation();
-  const navigate = useNavigate(); 
   const dormData = location.state?.dormData as DormDataForPayment | undefined;
 
+  const [currentPage, setCurrentPage] = useState<Page>('checkout');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const navigateTo = (page: Page) => {
+    if(page !== 'fail') {
+      setErrorMessage(null);
+    }
     setCurrentPage(page);
   };
 
-  if (!dormData || !dormData.room_types || dormData.room_types.length === 0) {
-    return (
-      <div className="checkout-container">
-        <h1 className="checkout-title">Error</h1>
-        <p>No dorm data found. Please start your booking from the dorm detail page.</p>
-        <button className="next-button" onClick={() => navigate('/')}>
-          Back to Home
-        </button>
-      </div>
-    );
+  if (!dormData) {
+    return <Navigate to="/" replace />; 
   }
 
   const renderCurrentPage = () => {
@@ -62,15 +60,38 @@ function PaymentFlow() {
       case 'checkout':
         return <Checkout navigateTo={navigateTo} dormData={dormData} />;
       case 'paymentCard':
-        return <PaymentByCreditCard navigateTo={navigateTo} dormData={dormData} />;
+        return <PaymentByCreditCard 
+                  navigateTo={navigateTo} 
+                  dormData={dormData} 
+                  setErrorMessage={setErrorMessage} 
+                />;
       case 'mobileBanking': 
-        return <MobileBanking navigateTo={navigateTo} dormData={dormData} />;
-      case 'thankYou':
-        return <ThankYou onContinue={() => navigate('/')} dormData={dormData} />;
+        return <MobileBanking 
+                  navigateTo={navigateTo} 
+                  dormData={dormData} 
+                  setErrorMessage={setErrorMessage} 
+                />;
+      case 'qrPayment':
+        return <QRPayment
+                  navigateTo={navigateTo}
+                  dormData={dormData}
+                  setErrorMessage={setErrorMessage}
+                />;
+      case 'success':
+        return <Success 
+                  onContinue={() => window.location.href = '/'} 
+                  dormData={dormData} 
+                />;
+      case 'fail':
+        return <Fail 
+                  navigateTo={navigateTo} 
+                  errorMessage={errorMessage} 
+                />;
       default:
         return <Checkout navigateTo={navigateTo} dormData={dormData} />;
     }
   }
+
   return renderCurrentPage();
 }
 
@@ -79,64 +100,24 @@ function AppRoutes() {
   const { role } = useAuth();
   return (
     <Routes>
-      {/* Public Routes */}
+   
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login-dormowner" element={<LoginDormOwnerPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register-dormowner" element={<RegisterDormOwnerPage />} />
       <Route path="/register-dormowner-form" element={<RegisterDormOwnerFormPage />} />
-      
-      {/* Main Routes with Layout */}
-      <Route
-        path="/"
-        element={
-          <MainLayout>
-            {role === 'dormowner' ? <DormOwnerDashboard /> : <HomePage />}
-          </MainLayout>
-        }
-      />
-      <Route
-        path="/dorms/:id"
-        element={
-            <MainLayout>
-                <DormDetailPage />
-            </MainLayout>
-        }
-    />
-      <Route
-        path="/search"
-        element={ <MainLayout> <SearchPage /> </MainLayout> }
-      />
-      <Route
-        path="/favorites"
-        element={ <MainLayout> <FavoritesPage /> </MainLayout> }
-      />
-      <Route
-        path="/chat"
-        element={ <MainLayout> <ChatPage /> </MainLayout> }
-      />
-      <Route
-        path="/reserved"
-        element={ <MainLayout> <ReservedPage /> </MainLayout> }
-      />
-      <Route
-        path="/review"
-        element={ <MainLayout> <ReviewPage /> </MainLayout> }
-      />
-      <Route
-        path="/support"
-        element={ <MainLayout> <SupportPage /> </MainLayout> }
-      />
-      <Route
-        path="/notifications"
-        element={ <MainLayout> <NotificationsPage /> </MainLayout> }
-      />
-      <Route
-        path="/settings"
-        element={ <MainLayout> <SettingsPage /> </MainLayout> }
-      />
-      
-      {/* 💡 Route นี้จะเรียก PaymentFlow */}
+      <Route path="/" element={<MainLayout>{role === 'dormowner' ? <DormOwnerDashboard /> : <HomePage />}</MainLayout>} />
+      <Route path="/dorms/:id" element={<MainLayout><DormDetailPage /></MainLayout>} />
+      <Route path="/search" element={ <MainLayout> <SearchPage /> </MainLayout> } />
+      <Route path="/favorites" element={ <MainLayout> <FavoritesPage /> </MainLayout> } />
+      <Route path="/chat" element={ <MainLayout> <ChatPage /> </MainLayout> } />
+      <Route path="/reserved" element={ <MainLayout> <ReservedPage /> </MainLayout> } />
+      <Route path="/review" element={ <MainLayout> <ReviewPage /> </MainLayout> } />
+      <Route path="/support" element={ <MainLayout> <SupportPage /> </MainLayout> } />
+      <Route path="/notifications" element={ <MainLayout> <NotificationsPage /> </MainLayout> } />
+      <Route path="/settings" element={ <MainLayout> <SettingsPage /> </MainLayout> } />
+
+    
       <Route
         path="/payment"
         element={
@@ -161,4 +142,3 @@ function App() {
 }
 
 export default App;
-
