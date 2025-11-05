@@ -90,7 +90,7 @@ class Room {
           rt.rent_per_day
         FROM "Rooms" r
         JOIN "RoomTypes" rt ON r.room_type_id = rt.room_type_id
-        WHERE rt.dorm_id = $1 AND r.status = 'available'
+        WHERE rt.dorm_id = $1 AND r.status = 'ห้องว่าง'
         ORDER BY r.room_name
       `;
       const result = await pool.query(query, [dormId]);
@@ -119,7 +119,7 @@ class Room {
         throw new Error('Room not found');
       }
       
-      return result.rows[0].status === 'available';
+      return result.rows[0].status === 'ห้องว่าง';
     } catch (error) {
       console.error('Error checking room availability:', error);
       throw error;

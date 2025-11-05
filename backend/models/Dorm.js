@@ -59,7 +59,7 @@ class Dorm {
                   'available_rooms', (
                     SELECT COUNT(*) 
                     FROM "Rooms" r 
-                    WHERE r.room_type_id = rt.room_type_id AND r.status = 'available'
+                    WHERE r.room_type_id = rt.room_type_id AND r.status = 'ห้องว่าง'
                   )
                 ) as room_type_data
               FROM "RoomTypes" rt
@@ -118,7 +118,7 @@ class Dorm {
           SELECT 
             d.dorm_id,
             COUNT(DISTINCT r.room_id) as total_rooms,
-            COUNT(DISTINCT CASE WHEN r.status = 'available' THEN r.room_id END) as available_rooms,
+            COUNT(DISTINCT CASE WHEN r.status = 'ห้องว่าง' THEN r.room_id END) as available_rooms,
             MIN(rt.rent_per_month) as min_price,
             MAX(rt.rent_per_month) as max_price
           FROM "Dorms" d
